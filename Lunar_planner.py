@@ -25,6 +25,9 @@ for simple_data in tree.xpath("/kml:kml/kml:Document/kml:Folder/kml:Placemark/km
   quadList.append(simple_data.text)
 
 r = 1737.4
+radius = 1.7374e6
+G = 6.67e-11
+M = 7.347e22
 
 #def calculate_distance(lat1 = 33.438, lon1 = 41.125,  lat2, lon2):
 
@@ -119,6 +122,10 @@ def findPoint(place):
           point.append(float(lonList[i]))
   return point
 
+def velocity(distance):
+  semi_major_axis = (math.sin((math.pi*distance)/(r*2*math.pi)) + 1)/2
+  return math.sqrt(2*((-(G*M)/(2*(semi_major_axis*radius)))+((G*M)/radius)))
+
 quad1 = ''
 quad2 = ''
 
@@ -132,6 +139,7 @@ distance = calculate_distance(point1[0], point1[1], point2[0], point2[1])
 print(f'Your selected target is at a bearing of {round(calculate_initial_compass_bearing(point1, point2),2)} degrees from your current location')
 print(f'The two points are {round(distance,2)} km apart')
 print(f'The optimal launch vector to reach this distance is {round(angle_of_attack(distance),2)} degrees above horizontal')
+print(f'The optimal velocity for this path is {round(velocity(distance),2)}')
 print('Have a safe flight commander')
 
 #url1 = 'https://asc-planetarynames-data.s3.us-west-2.amazonaws.com/Lunar/lac_' + quad1[4:] + '_wac.pdf'
