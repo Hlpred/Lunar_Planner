@@ -4,6 +4,7 @@ import math
 from lxml import etree
 import difflib
 import webbrowser
+from scipy.optimize import fsolve
 
 ns = {"kml": "http://www.opengis.net/kml/2.2"}
 
@@ -88,13 +89,25 @@ def calculate_initial_compass_bearing(pointA, pointB):
 
     return compass_bearing
 
-def angle_of_attack(distance):
+def launch_vector_angle(distance):
     o = math.sin((math.pi*distance)/(r*2*math.pi))
     y1 = math.sqrt(1 - o**2)
     m1 = (math.sqrt(y1**2 + o**2) + o)/y1
     slope1 = math.degrees(atan(m1))
     slope2 = math.degrees(atan2(o, y1))
     return slope1-slope2
+
+def angle_of_attack(distance):
+  Aoa = launch_vector_angle(distance)*(math.pi/180)
+  engine_accel = 22
+  v = velocity(distance)
+  t = v/engine_accel
+  grav_vel = t*((G*M)/radius**2)
+  def f(x):
+    return Aoa-atan2(v*math.sin(x)-grav_vel, v*math.cos(x))
+  x0 = Aoa
+  x = fsolve(f, x0)
+  return(x[0]*(180/math.pi))
 
 def findPoint(place):
   point = []
@@ -135,11 +148,13 @@ place2 = input('Enter your desired destination: ')
 point1 = tuple(findPoint(place1))
 point2 = tuple(findPoint(place2))
 
+
 distance = calculate_distance(point1[0], point1[1], point2[0], point2[1])
 print(f'Your selected target is at a bearing of {round(calculate_initial_compass_bearing(point1, point2),2)} degrees from your current location')
-print(f'The two points are {round(distance,2)} km apart')
-print(f'The optimal launch vector to reach this distance is {round(angle_of_attack(distance),2)} degrees above horizontal')
-print(f'The optimal velocity for this path is {round(velocity(distance),2)}')
+print(f'The two points are {round(distance,5)} km apart')
+print(f'The optimal launch vector to reach this distance is {round(launch_vector_angle(distance),5)} degrees above horizontal')
+print(f'The optimal angle of attack to for this launch vector is {round(angle_of_attack(distance),5)}')
+print(f'The optimal velocity for this path is {round(velocity(distance),5)}')
 print('Have a safe flight commander')
 
 #url1 = 'https://asc-planetarynames-data.s3.us-west-2.amazonaws.com/Lunar/lac_' + quad1[4:] + '_wac.pdf'

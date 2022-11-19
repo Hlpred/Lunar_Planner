@@ -2,14 +2,14 @@ import math
 import matplotlib.pyplot as plt
 import numpy as np
 
-step = 0.001
+step = 0.0005
 radius = 1.7374e6
 G = 6.67e-11
 M = 7.347e22
 startingEle = 0
 landingEle = 0
-totalVel = 1116.75678007
-launchAngle = 36.7555284458 * (math.pi/180)
+totalVel = 1597.202344
+launchAngle = 17.1771180229 * (math.pi/180)
 
 bodyCenter = [0, 0]
 spacecraftPos = [0, radius+startingEle]
@@ -27,7 +27,7 @@ crash = False
 crashCheck = False
 rPrev = 0
 Hit = [0, 0]
-for i in range(round((1/step)*2500)):
+for i in range(round((1/step)*3000)):
     origX = spacecraftPos[0]
     origY = spacecraftPos[1]
     tempPos[0] = spacecraftPos[0] + spacecraftVel[0]
