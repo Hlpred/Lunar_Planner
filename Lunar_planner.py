@@ -98,16 +98,16 @@ def launch_vector_angle(distance):
     return slope1-slope2
 
 def angle_of_attack(distance):
-  Aoa = launch_vector_angle(distance)*(math.pi/180)
+  Target_Aoa = launch_vector_angle(distance)*(math.pi/180)
   engine_accel = 22
   v = velocity(distance)
-  t = v/engine_accel
-  grav_vel = t*((G*M)/radius**2)
+  grav_accel = ((G*M)/radius**2)
   def f(x):
-    return Aoa-atan2(v*math.sin(x)-grav_vel, v*math.cos(x))
-  x0 = Aoa
+    return Target_Aoa-atan2(math.sin(x)-(grav_accel/engine_accel), math.cos(x))
+  x0 = Target_Aoa
   x = fsolve(f, x0)
-  return(x[0]*(180/math.pi))
+  res_angle = x[0]
+  return(res_angle*(180/math.pi), (v*math.cos(Target_Aoa))/math.cos(res_angle))
 
 def findPoint(place):
   point = []
@@ -152,9 +152,12 @@ point2 = tuple(findPoint(place2))
 distance = calculate_distance(point1[0], point1[1], point2[0], point2[1])
 print(f'Your selected target is at a bearing of {round(calculate_initial_compass_bearing(point1, point2),2)} degrees from your current location')
 print(f'The two points are {round(distance,5)} km apart')
+print('Ideal zero burn time launch:')
 print(f'The optimal launch vector to reach this distance is {round(launch_vector_angle(distance),5)} degrees above horizontal')
-print(f'The optimal angle of attack to for this launch vector is {round(angle_of_attack(distance),5)}')
 print(f'The optimal velocity for this path is {round(velocity(distance),5)}')
+print('Adjusted for burn time:')
+print(f'The optimal angle of attack for this launch vector is {round(angle_of_attack(distance)[0],5)} degrees above horizontal')
+print(f'The minimum delta V for this path is {round(angle_of_attack(distance)[1],5)}')
 print('Have a safe flight commander')
 
 #url1 = 'https://asc-planetarynames-data.s3.us-west-2.amazonaws.com/Lunar/lac_' + quad1[4:] + '_wac.pdf'
@@ -163,4 +166,4 @@ print('Have a safe flight commander')
 #webbrowser.open(url2)
 
 url = f'https://quickmap.lroc.asu.edu/query?camera=8722239.073%2C0.000%2C0.000%2C6.283%2C-1.571%2C0.000%2C8722239.073%2C60.000&id=lroc&showTerrain=true&queryFeature=0&queryOpts=N4IgLghgRiBcIBMKRAXyA&features={point1[1]}%2C{point1[0]}%2C{point2[1]}%2C{point2[0]}&layers=NrBsFYBoAZIRnpEBmZcAsjYIHYFcAbAyAbwF8BdC0ypcOKbRFOOZLRfImqnioA&proj=22'
-webbrowser.open(url)
+#webbrowser.open(url)
