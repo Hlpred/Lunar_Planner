@@ -6,10 +6,10 @@ step = 0.0005
 radius = 1.7374e6
 G = 6.67e-11
 M = 7.347e22
-startingEle = 0
-landingEle = 0
-totalVel = 1597.202344
-launchAngle = 17.1771180229 * (math.pi/180)
+startingEle = -2565
+landingEle = -3125.3
+totalVel = 1447.67661
+launchAngle = 26.91521 * (math.pi/180)
 
 bodyCenter = [0, 0]
 spacecraftPos = [0, radius+startingEle]
@@ -58,6 +58,7 @@ for i in range(round((1/step)*3000)):
         Hit[0] = spacecraftPos[0]
         Hit[1] = spacecraftPos[1]
         print((radAngle/(2*math.pi))*(radius*2*math.pi)/1000)
+        break
 fig = plt.figure()
 ax = fig.add_subplot(111)
 ax.plot(xRes, yRes)

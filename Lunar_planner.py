@@ -89,25 +89,50 @@ def calculate_initial_compass_bearing(pointA, pointB):
 
     return compass_bearing
 
-def launch_vector_angle(distance):
-    o = math.sin((math.pi*distance)/(r*2*math.pi))
-    y1 = math.sqrt(1 - o**2)
-    m1 = (math.sqrt(y1**2 + o**2) + o)/y1
-    slope1 = math.degrees(atan(m1))
-    slope2 = math.degrees(atan2(o, y1))
-    return slope1-slope2
+def ellipse_slope(point, x1, y1):
+  #-(point[0]*(math.sqrt((point[1]-y1)**2+(point[0]-x1)**2))+((point[0]-x1)*math.sqrt(point[0]**2+point[1]**2)))/(point[1]*(math.sqrt((point[1]-y1)**2+(point[0]-x1)**2))+((point[1]-y1)*math.sqrt(point[0]**2+point[1]**2)))
+  return -(point[0]*(math.sqrt((point[1]-y1)**2+(point[0]-x1)**2))+((point[0]-x1)*math.sqrt(point[0]**2+point[1]**2)))/(point[1]*(math.sqrt((point[1]-y1)**2+(point[0]-x1)**2))+((point[1]-y1)*math.sqrt(point[0]**2+point[1]**2)))
 
-def angle_of_attack(distance):
-  Target_Aoa = launch_vector_angle(distance)*(math.pi/180)
-  engine_accel = 22
-  v = velocity(distance)
-  grav_accel = ((G*M)/radius**2)
+def slope_to_angle(slope, point):
+  return math.fabs(atan(slope)*(180/math.pi)-atan(-point[0]/point[1])*(180/math.pi))
+
+def ele_adjustment(distance, launch_ele, land_ele):
+  angle_from_vertical = distance/(2*math.pi*r)*math.pi
+  inital_x_coord = math.sin(angle_from_vertical)
+  inital_y_coord = math.cos(angle_from_vertical)
+  point1 = [(-inital_x_coord)-(inital_x_coord*(launch_ele/radius)), inital_y_coord+(inital_y_coord*(launch_ele/radius))]
+  point2 = [(inital_x_coord+(inital_x_coord*(land_ele/radius))), inital_y_coord+(inital_y_coord*(land_ele/radius))]
+  straight_dist = math.sqrt((point2[0]-point1[0])**2+(point2[1]-point1[1])**2)
+  double_a = (straight_dist+math.sqrt(point1[0]**2+point1[1]**2)+math.sqrt(point2[0]**2+point2[1]**2))/2
+  m = ((point1[1]-point2[1])/(point1[0]-point2[0]))
+  x1 = (math.cos(atan(m))*(double_a-math.sqrt(point1[0]**2+point1[1]**2)))+point1[0]
+  y1 = (math.sin(atan(m))*(double_a-math.sqrt(point1[0]**2+point1[1]**2)))+point1[1]
+  slope1 = ellipse_slope(point1, x1, y1)
+  slope2 = ellipse_slope(point2, x1, y1)
+  angle1 = slope_to_angle(slope1, point1)
+  angle2 = slope_to_angle(slope2, point2)
+  v1 = math.sqrt(2*(((-G*M))/(double_a*radius)+(G*M)/(radius+launch_ele)))
+  v2 = math.sqrt(2*(((-G*M))/(double_a*radius)+(G*M)/(radius+land_ele)))
+  """
+  grav_result1 = grav_adjustment(angle1, v1, engine_accel1)
+  aoa1 = grav_result1[0]
+  delta_v1 = grav_result1[1]
+  grav_result2 = grav_adjustment(angle2, v2, engine_accel2)
+  aoa2 = grav_result2[0]
+  delta_v2 = grav_result2[1]
+  x_vel = math.cos(aoa2*(math.pi/180))*delta_v2
+  """
+  return angle1, angle2, v1, v2
+
+def grav_adjustment(target_aoa, v, engine_accel):
+  target_aoa = target_aoa*(math.pi/180)
+  grav_accel = -((G*M)/radius**2)
   def f(x):
-    return Target_Aoa-atan2(math.sin(x)-(grav_accel/engine_accel), math.cos(x))
-  x0 = Target_Aoa
+    return target_aoa-atan2(math.sin(x)+(grav_accel/engine_accel), math.cos(x))
+  x0 = target_aoa
   x = fsolve(f, x0)
   res_angle = x[0]
-  return(res_angle*(180/math.pi), (v*math.cos(Target_Aoa))/math.cos(res_angle))
+  return(res_angle*(180/math.pi), (v*math.cos(target_aoa))/math.cos(res_angle))
 
 def findPoint(place):
   point = []
@@ -135,10 +160,6 @@ def findPoint(place):
           point.append(float(lonList[i]))
   return point
 
-def velocity(distance):
-  semi_major_axis = (math.sin((math.pi*distance)/(r*2*math.pi)) + 1)/2
-  return math.sqrt(2*((-(G*M)/(2*(semi_major_axis*radius)))+((G*M)/radius)))
-
 quad1 = ''
 quad2 = ''
 
@@ -148,22 +169,27 @@ place2 = input('Enter your desired destination: ')
 point1 = tuple(findPoint(place1))
 point2 = tuple(findPoint(place2))
 
-
 distance = calculate_distance(point1[0], point1[1], point2[0], point2[1])
 print(f'Your selected target is at a bearing of {round(calculate_initial_compass_bearing(point1, point2),2)} degrees from your current location')
 print(f'The two points are {round(distance,5)} km apart')
-print('Ideal zero burn time launch:')
-print(f'The optimal launch vector to reach this distance is {round(launch_vector_angle(distance),5)} degrees above horizontal')
-print(f'The optimal velocity for this path is {round(velocity(distance),5)}')
+url = f'https://quickmap.lroc.asu.edu/query?camera=8722239.073%2C0.000%2C0.000%2C6.283%2C-1.571%2C0.000%2C8722239.073%2C60.000&id=lroc&showTerrain=true&queryFeature=0&queryOpts=N4IgLghgRiBcIBMKRAXyA&features={point1[1]}%2C{point1[0]}%2C{point2[1]}%2C{point2[0]}&layers=NrBsFYBoAZIRnpEBmZcAsjYIHYFcAbAyAbwF8BdC0ypcOKbRFOOZLRfImqnioA&proj=22'
+webbrowser.open(url)
+launch_ele = float(input('Enter the elevation of your launching location in meters: '))
+land_ele = float(input('Enter the elevation of your landing location in meters: '))
+maneuver_data = ele_adjustment(distance, launch_ele, land_ele)
+engine_accel1 = float(input('Enter the current acceleration of your engine: '))
+grav_data1 = grav_adjustment(maneuver_data[0], maneuver_data[2], engine_accel1)
 print('Adjusted for burn time:')
-print(f'The optimal angle of attack for this launch vector is {round(angle_of_attack(distance)[0],5)} degrees above horizontal')
-print(f'The minimum delta V for this path is {round(angle_of_attack(distance)[1],5)}')
-print('Have a safe flight commander')
+print(f'The optimal angle of attack for launch is {round(grav_data1[0],5)} degrees above horizontal')
+print(f'The optimal delta V for launch is {round(grav_data1[1],5)} m/s')
+print('After first burn:')
+engine_accel2 = float(input('Enter the current acceleration of your engine: '))
+grav_data2 = grav_adjustment(maneuver_data[1], maneuver_data[3], engine_accel2)
+print('Adjusted for burn time:')
+print(f'The optimal angle of attack for landing is {round(grav_data2[0],5)} degrees above horizontal')
+print(f'The optimal delta V for landing is {round(grav_data2[1],5)} m/s')
 
 #url1 = 'https://asc-planetarynames-data.s3.us-west-2.amazonaws.com/Lunar/lac_' + quad1[4:] + '_wac.pdf'
 #url2 = 'https://asc-planetarynames-data.s3.us-west-2.amazonaws.com/Lunar/lac_' + quad2[4:] + '_wac.pdf'
 #webbrowser.open(url1)
 #webbrowser.open(url2)
-
-url = f'https://quickmap.lroc.asu.edu/query?camera=8722239.073%2C0.000%2C0.000%2C6.283%2C-1.571%2C0.000%2C8722239.073%2C60.000&id=lroc&showTerrain=true&queryFeature=0&queryOpts=N4IgLghgRiBcIBMKRAXyA&features={point1[1]}%2C{point1[0]}%2C{point2[1]}%2C{point2[0]}&layers=NrBsFYBoAZIRnpEBmZcAsjYIHYFcAbAyAbwF8BdC0ypcOKbRFOOZLRfImqnioA&proj=22'
-#webbrowser.open(url)
