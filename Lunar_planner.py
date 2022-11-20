@@ -1,4 +1,3 @@
-# Python 3 program to calculate Distance Between Two Points on the Moon
 from math import *
 import math
 from lxml import etree
@@ -90,7 +89,6 @@ def calculate_initial_compass_bearing(pointA, pointB):
     return compass_bearing
 
 def ellipse_slope(point, x1, y1):
-  #-(point[0]*(math.sqrt((point[1]-y1)**2+(point[0]-x1)**2))+((point[0]-x1)*math.sqrt(point[0]**2+point[1]**2)))/(point[1]*(math.sqrt((point[1]-y1)**2+(point[0]-x1)**2))+((point[1]-y1)*math.sqrt(point[0]**2+point[1]**2)))
   return -(point[0]*(math.sqrt((point[1]-y1)**2+(point[0]-x1)**2))+((point[0]-x1)*math.sqrt(point[0]**2+point[1]**2)))/(point[1]*(math.sqrt((point[1]-y1)**2+(point[0]-x1)**2))+((point[1]-y1)*math.sqrt(point[0]**2+point[1]**2)))
 
 def slope_to_angle(slope, point):
@@ -113,15 +111,6 @@ def ele_adjustment(distance, launch_ele, land_ele):
   angle2 = slope_to_angle(slope2, point2)
   v1 = math.sqrt(2*(((-G*M))/(double_a*radius)+(G*M)/(radius+launch_ele)))
   v2 = math.sqrt(2*(((-G*M))/(double_a*radius)+(G*M)/(radius+land_ele)))
-  """
-  grav_result1 = grav_adjustment(angle1, v1, engine_accel1)
-  aoa1 = grav_result1[0]
-  delta_v1 = grav_result1[1]
-  grav_result2 = grav_adjustment(angle2, v2, engine_accel2)
-  aoa2 = grav_result2[0]
-  delta_v2 = grav_result2[1]
-  x_vel = math.cos(aoa2*(math.pi/180))*delta_v2
-  """
   return angle1, angle2, v1, v2
 
 def grav_adjustment(target_aoa, v, engine_accel):
