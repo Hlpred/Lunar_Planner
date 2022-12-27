@@ -2,7 +2,6 @@ from math import *
 import math
 from lxml import etree
 import difflib
-from scipy.optimize import fsolve
 import Constants
 
 ns = {"kml": "http://www.opengis.net/kml/2.2"}
@@ -116,11 +115,9 @@ def ele_adjustment(distance, launch_ele, land_ele):
 def grav_adjustment(target_aoa, v, engine_accel):
   target_aoa = target_aoa*(math.pi/180)
   grav_accel = -((G*M)/radius**2)
-  def f(x):
-    return target_aoa-atan2(math.sin(x)+(grav_accel/engine_accel), math.cos(x))
-  x0 = target_aoa
-  x = fsolve(f, x0)
-  res_angle = x[0]
+  a= grav_accel/engine_accel
+  b = tan(target_aoa)
+  res_angle = 2*atan2((sqrt(-a**2+b**2+1)-1),(a+b))
   return(res_angle*(180/math.pi), (v*math.cos(target_aoa))/math.cos(res_angle))
 
 def findPoint(place):

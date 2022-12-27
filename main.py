@@ -30,6 +30,7 @@ else:
   pass
 engine_accel1 = float(input('Enter the current acceleration of your engine: '))
 grav_data1 = Lunar_planner.grav_adjustment(maneuver_data[0], maneuver_data[2], engine_accel1)
+print(maneuver_data)
 print('Adjusted for burn time:')
 print(f'The optimal angle of attack for launch is {round(grav_data1[0],5)} degrees above horizontal')
 print(f'The optimal delta V for launch is {round(grav_data1[1],5)} m/s')
