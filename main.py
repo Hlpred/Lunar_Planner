@@ -34,9 +34,30 @@ print(maneuver_data)
 print('Adjusted for burn time:')
 print(f'The optimal angle of attack for launch is {round(grav_data1[0],5)} degrees above horizontal')
 print(f'The optimal delta V for launch is {round(grav_data1[1],5)} m/s')
+net_accel = Lunar_planner.net_accel(grav_data1[0], engine_accel1)
+print(f'Net acceleration in the direction of travel is {round(net_accel, 5)} (m/s)^2')
+dv_corrected = Lunar_planner.dv_adjustment(net_accel, maneuver_data[0], maneuver_data[4], launch_ele+launch_margin)
+print(f'Corrected Delta-V: {dv_corrected} m/s')
+print(f'Gravity Adjusted: {Lunar_planner.grav_adjustment(maneuver_data[0], dv_corrected, engine_accel1)} m/s')
 print('After first burn:')
 engine_accel2 = float(input('Enter the current acceleration of your engine: '))
 grav_data2 = Lunar_planner.grav_adjustment(maneuver_data[1], maneuver_data[3], engine_accel2)
+
+def mid_course():
+  print('Mid Course Correction:')
+  range = float(input('Enter your current distance to target in km: '))
+  altitude = float(input('Enter your current altitude in km: '))
+  velocity = float(input('Enter your current velocity in m/s: '))
+  vy = float(input('Enter your current vertical velocity in m/s: '))
+  print(f'Apply {Lunar_planner.mid_course_fixed(altitude, land_ele, velocity, range, vy)} m/s delta-V')
+  keep_going = input("Type \"C\" for another correction")
+  if keep_going == 'C' or keep_going == 'c':
+    mid_course()
+  else:
+    pass
+
+mid_course()
+
 print('Adjusted for burn time:')
 print(f'The optimal angle of attack for landing is {round(grav_data2[0],5)} degrees above horizontal')
 print(f'The optimal delta V for landing is {round(grav_data2[1],5)} m/s')

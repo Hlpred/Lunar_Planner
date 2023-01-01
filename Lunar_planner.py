@@ -1,6 +1,7 @@
 from math import *
 import math
 from lxml import etree
+from scipy.optimize import fsolve
 import difflib
 import Constants
 
@@ -110,15 +111,87 @@ def ele_adjustment(distance, launch_ele, land_ele):
   angle2 = slope_to_angle(slope2, point2)
   v1 = math.sqrt(2*(((-G*M))/(double_a*radius)+(G*M)/(radius+launch_ele)))
   v2 = math.sqrt(2*(((-G*M))/(double_a*radius)+(G*M)/(radius+land_ele)))
-  return angle1, angle2, v1, v2
+  return angle1, angle2, v1, v2, double_a
 
 def grav_adjustment(target_aoa, v, engine_accel):
   target_aoa = target_aoa*(math.pi/180)
   grav_accel = -((G*M)/radius**2)
-  a= grav_accel/engine_accel
+  a = grav_accel/engine_accel
   b = tan(target_aoa)
   res_angle = 2*atan2((sqrt(-a**2+b**2+1)-1),(a+b))
   return(res_angle*(180/math.pi), (v*math.cos(target_aoa))/math.cos(res_angle))
+
+def net_accel(real_aoa, engine_accel):
+  grav_accel = -((G*M)/radius**2)
+  real_aoa = real_aoa*(math.pi/180)
+  return sqrt((engine_accel*cos(real_aoa))**2+((engine_accel*sin(real_aoa))+grav_accel)**2)
+
+def dv_adjustment(net_accel, target_aoa, double_a, elevation):
+  target_aoa = target_aoa*(math.pi/180)
+  total_E = -(G*M)/(double_a*radius)
+  def f(x):
+    return sqrt(2*(total_E+((G*M)/(0.5*net_accel*x**2*sin(target_aoa)+radius+elevation))))-net_accel*x
+  x0 = 0
+  x = fsolve(f, x0)
+  return net_accel*x[0]
+
+def get_intersections(x0, y0, r0, x1, y1, r1):
+    # circle 1: (x0, y0), radius r0
+    # circle 2: (x1, y1), radius r1
+
+    d=math.sqrt((x1-x0)**2 + (y1-y0)**2)
+    
+    # non intersecting
+    if d > r0 + r1 :
+        return None
+    # One circle within other
+    if d < abs(r0-r1):
+        return None
+    # coincident circles
+    if d == 0 and r0 == r1:
+        return None
+    else:
+        a=(r0**2-r1**2+d**2)/(2*d)
+        h=math.sqrt(r0**2-a**2)
+        x2=x0+a*(x1-x0)/d   
+        y2=y0+a*(y1-y0)/d   
+        x3=x2+h*(y1-y0)/d     
+        y3=y2-h*(x1-x0)/d 
+
+        x4=x2-h*(y1-y0)/d
+        y4=y2+h*(x1-x0)/d
+        
+        return (x3, y3, x4, y4)
+
+def mid_course_fixed(launch_ele, land_ele, velocity, distance, vy):
+  launch_ele *= 1e3
+  total_E = (0.5*velocity**2)-(G*M/(radius+launch_ele))
+  double_a = (-G*M)/(total_E*radius)
+  angle_from_vertical = distance/(2*math.pi*r)*math.pi
+  inital_x_coord = math.sin(angle_from_vertical)
+  inital_y_coord = math.cos(angle_from_vertical)
+  point1 = [(-inital_x_coord)-(inital_x_coord*(launch_ele/radius)), inital_y_coord+(inital_y_coord*(launch_ele/radius))]
+  point2 = [(inital_x_coord+(inital_x_coord*(land_ele/radius))), inital_y_coord+(inital_y_coord*(land_ele/radius))]
+  r1 = double_a - sqrt(point1[0]**2+point1[1]**2)
+  r2 = double_a - sqrt(point2[0]**2+point2[1]**2)
+  intersections = get_intersections(point1[0], point1[1], r1, point2[0], point2[1], r2)
+  x1 = intersections[0]
+  y1 = intersections[1]
+  slope1 = ellipse_slope(point1, x1, y1)
+  angle1 = slope_to_angle(slope1, point1)
+  if vy < 0:
+    angle1 *= -1
+  else:
+    pass
+  v1 = math.sqrt(2*(((-G*M))/(double_a*radius)+(G*M)/(radius+launch_ele)))
+  vx = sqrt(velocity**2-vy**2)
+  new_vy = v1*sin(angle1*(pi/180))
+  new_vx = v1*cos(angle1*(pi/180))
+  dvy = new_vy - vy
+  dvx = new_vx - vx
+  return angle1, v1, dvy, dvx
+
+print(mid_course_fixed(198.5, 2000, 1287, 403.7, -479))
 
 def findPoint(place):
   point = []
