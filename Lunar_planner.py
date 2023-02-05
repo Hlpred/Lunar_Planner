@@ -111,7 +111,7 @@ def ele_adjustment(distance, launch_ele, land_ele):
   angle2 = slope_to_angle(slope2, point2)
   v1 = math.sqrt(2*(((-G*M))/(double_a*radius)+(G*M)/(radius+launch_ele)))
   v2 = math.sqrt(2*(((-G*M))/(double_a*radius)+(G*M)/(radius+land_ele)))
-  return angle1, angle2, v1, v2, double_a
+  return angle1, angle2, v1, v2, x1, y1, double_a
 
 def grav_adjustment(target_aoa, v, engine_accel):
   target_aoa = target_aoa*(math.pi/180)
@@ -190,8 +190,6 @@ def mid_course_fixed(launch_ele, land_ele, velocity, distance, vy):
   dvy = new_vy - vy
   dvx = new_vx - vx
   return angle1, v1, dvy, dvx
-
-print(mid_course_fixed(198.5, 2000, 1287, 403.7, -479))
 
 def findPoint(place):
   point = []
