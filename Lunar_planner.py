@@ -198,7 +198,7 @@ def findPoint(place):
     point = [float(i) for i in point]
   else:
     if place == 'base' or place == 'Base':
-      point = (41.125, 326.562)
+      point = (41.122, 326.555)
     else:
       foundLoc = False
       for i, name in enumerate(nameListLower):
