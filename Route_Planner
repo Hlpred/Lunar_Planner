@@ -1,0 +1,39 @@
+from itertools import permutations
+import Lunar_planner
+import webbrowser
+
+def shortest_distance(points):
+    """
+    Find the shortest path that visits all the points in a set on a sphere.
+
+    Args:
+    points: list of tuples, each representing a point on the sphere as a latitude and longitude pair (in degrees)
+
+    Returns:
+    float, the length of the shortest path that visits all the points (in kilometers)
+    list, the original list of points in their new order after finding the shortest path
+    """
+    min_distance = float("inf")
+    min_path = []
+    for path in permutations(points):
+        distance = 0
+        for i in range(len(path) - 1):
+            distance += Lunar_planner.calculate_distance(path[i][0], path[i][1], path[i + 1][0], path[i + 1][1])
+        if distance < min_distance:
+            min_distance = distance
+            min_path = list(path)
+    return min_distance, min_path
+
+points = [(29.77596, 355.87159),(8.11824, 321.96134),(9.64824, 340.69537),(-15.66185, 320.35541),(-20.30731, 266.38377),(27.52901, 4.31747)]
+print(shortest_distance(points))
+
+line = ''
+for point in points:
+    
+url = f'https://quickmap.lroc.asu.edu/query?camera=8722239.073%2C0.000%2C0.000%2C6.283%2C-1.571%2C0.000%2C8722239.073%2C60.000&id=lroc&showTerrain=true&queryFeature=0&queryOpts=N4IgLghgRiBcIBMKRAXyA&features={point1[1]}%2C{point1[0]}%2C{point2[1]}%2C{point2[0]}&layers=NrBsFYBoAZIRnpEBmZcAsjYIHYFcAbAyAbwF8BdC0ypcOKbRFOOZLRfImqnioA&proj=22'
+webbrowser.open(url)
+
+
+
+
+

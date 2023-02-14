@@ -31,7 +31,7 @@ M = Constants.M
 
 #def calculate_distance(lat1 = 33.438, lon1 = 41.125,  lat2, lon2):
 
-def calculate_distance(lat1, lon1,  lat2, lon2):
+def calculate_distance(lat1, lon1, lat2, lon2):
 	
 	# The math module contains a function named
 	# radians which converts from degrees to radians.
