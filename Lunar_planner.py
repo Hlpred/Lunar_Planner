@@ -66,8 +66,6 @@ def calculate_initial_compass_bearing(pointA, pointB):
     :Returns Type:
       float
     """
-    if (type(pointA) != tuple) or (type(pointB) != tuple):
-        raise TypeError("Only tuples are supported as arguments")
 
     lat1 = math.radians(pointA[0])
     lat2 = math.radians(pointB[0])

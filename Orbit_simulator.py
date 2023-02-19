@@ -9,8 +9,8 @@ radius = Constants.radius
 G = Constants.G
 M = Constants.M
 
-def engineAccel(wetMass, burnRate, thrust, time, offset):
-    return thrust / (wetMass - burnRate*(time+offset))
+def engineAccel(wetMass, burnRate, thrust, time):
+    return thrust / (wetMass - burnRate*time)
 
 def ellipse_slope(point, x1, y1):
   return -(point[0]*(math.sqrt((point[1]-y1)**2+(point[0]-x1)**2))+((point[0]-x1)*math.sqrt(point[0]**2+point[1]**2)))/(point[1]*(math.sqrt((point[1]-y1)**2+(point[0]-x1)**2))+((point[1]-y1)*math.sqrt(point[0]**2+point[1]**2)))
@@ -33,7 +33,7 @@ def grav_adjustment(r, foc_x, foc_y, pos, a, vel, a_s, path_angle):
     angle_above_path = math.atan((y+a_g*math.cos(alpha))/(((-b_1+math.sqrt(b_1**2-4*(c_1)))/2)+a_g*math.sin(-alpha)))
     return (angle_above_path+path_angle)
 
-def simulate(distance, startingEle, landingEle, fullFlight, timeOffset):
+def simulate(distance, startingEle, landingEle, fullFlight, wetMass):
     manuver_data = Lunar_planner.ele_adjustment(distance, startingEle, landingEle)
     #launchAngle = launchAngle*(math.pi/180)
     #burnAngle = burnAngle*(math.pi/180)
@@ -70,7 +70,7 @@ def simulate(distance, startingEle, landingEle, fullFlight, timeOffset):
         burnAngle = slope_to_angle(slope, [spacecraftPos[0]/radius, spacecraftPos[1]/radius])
         orig_angle = burnAngle
         if burnDone == False:
-            burnAngle = grav_adjustment(r, foc_x, foc_y, spacecraftPos, manuver_data[6], spacecraftVel, engineAccel(2.45e4, 8, 3.2e5, i*step, timeOffset), orig_angle)
+            burnAngle = grav_adjustment(r, foc_x, foc_y, spacecraftPos, manuver_data[6], spacecraftVel, engineAccel(wetMass, 8, 3.2e5, i*step), orig_angle)
         if spacecraftPos[0] != 0:
             theta = math.atan2(spacecraftPos[1], spacecraftPos[0])
         else:
@@ -90,9 +90,9 @@ def simulate(distance, startingEle, landingEle, fullFlight, timeOffset):
             if i == 0:
                 firstAngle = burnAngle*(180/math.pi)
             #step is squared because you first convert into steps by multiplying by step. Then multiply by time (also step)
-            spacecraftVel[0] += math.cos(burnTheta)*engineAccel(2.45e4, 8, 3.2e5, i*step, timeOffset)*step**2
-            spacecraftVel[1] += math.sin(burnTheta)*engineAccel(2.45e4, 8, 3.2e5, i*step, timeOffset)*step**2
-            dv += engineAccel(2.45e4, 8, 3.2e5, i*step, timeOffset)*step
+            spacecraftVel[0] += math.cos(burnTheta)*engineAccel(wetMass, 8, 3.2e5, i*step)*step**2
+            spacecraftVel[1] += math.sin(burnTheta)*engineAccel(wetMass, 8, 3.2e5, i*step)*step**2
+            dv += engineAccel(wetMass, 8, 3.2e5, i*step)*step
             if ((math.sqrt(spacecraftVel[0]**2 + spacecraftVel[1]**2)/step) > math.sqrt(2*(((-G*M))/(manuver_data[6]*radius)+(G*M)/(r)))):
                 burnDone = True
                 arc_angle = math.atan2(spacecraftPos[0], spacecraftPos[1])
