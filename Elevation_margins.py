@@ -31,3 +31,14 @@ def landing_burn_height(height, v, landing_ele, ship_accl):
         return height_fun(grav, sol1, v, height)
     else:
         return height_fun(grav, sol2, v, height)
+
+def hover_accel(totalMass):
+    return Constants.hover_thrust/totalMass
+
+def launch_time(wetMass, pitchChange, safetyFactor):
+    accel = (Constants.yaw_torque/(wetMass*Constants.yaw_inertia))*180/math.pi
+    print(accel)
+    pitchTime = 2*math.sqrt(pitchChange/accel)
+    return pitchTime*safetyFactor
+
+launch_time(23410, 10, 1)

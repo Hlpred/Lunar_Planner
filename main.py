@@ -4,6 +4,7 @@ from Lunar_planner import *
 import Elevation_margins
 from Route_Planner2 import routePlan
 import ast
+import Constants
 
 input_path = input('Enter a list of points to visit with your starting point first: ')
 input_path = ast.literal_eval(input_path)
@@ -26,21 +27,22 @@ for i in range(len(output_path)):
         #webbrowser.open(url)
         launch_ele = float(input('Enter the elevation of your launching location in meters: '))
         land_ele = float(input('Enter the elevation of your landing location in meters: '))
-        hover_accel1 = float(input('What is the current acceleration of your hover engines?: '))
-        launch_margin = float(input('How much launch margin do you want in s?: '))
+        landing_margin = float(input('How much landing margin do you want in m?: '))
+        main_prop_mass = float(input('Enter your current main propellent mass in kg: '))
+        RCS_prop_mass = float(input('Enter your current RCS propellent mass in kg: '))
+        heading = float(input('What\'s your current heading in degrees: '))
+        totalMass = main_prop_mass + RCS_prop_mass + Constants.Dry_mass
+        launch_margin = Elevation_margins.launch_time(totalMass)
+        hover_accel1 = Elevation_margins.hover_accel(totalMass)
         launch_margin = Elevation_margins.launch_height(launch_margin, hover_accel1, launch_ele)
         print(round(launch_margin,2))
-        landing_margin = float(input('How much landing margin do you want in m?: '))
-        main_prop_mass = float(input('Enter your current main propellent mass in kg:'))
-        RCS_prop_mass = float(input('Enter your current RCS propellent mass in kg:'))
-        wetMass = main_prop_mass + RCS_prop_mass
-        sim_data = simulate(distance, launch_ele+launch_margin, land_ele+landing_margin, False, wetMass)
+        sim_data = simulate(distance, launch_ele+launch_margin, land_ele+landing_margin, False, totalMass)
         print(f'Delta-v: {round(sim_data[1],3)} m/s\nStart angle: {round(sim_data[4],2)}°\nEnd angle: {round(sim_data[5],2)}°')
         hover_accel2 = float(input('What is your hover engine acceleration?: '))
         burn_height = Elevation_margins.landing_burn_height(land_ele+landing_margin, 0, land_ele, hover_accel2)
         print(f'Set altitude hold to {land_ele} m and engage altitude hold at {round(burn_height-land_ele,2)} m above the ground')
         print('Deorbit Burn')
-        sim_data2 = simulate(distance, land_ele+landing_margin, launch_ele+launch_margin, False, wetMass)
+        sim_data2 = simulate(distance, land_ele+landing_margin, launch_ele+launch_margin, False, totalMass)
         print(f'Relight distance: {round(sim_data2[0],3)} km\nStart angle: {round(sim_data2[5],2)}°\nEnd angle: {round(sim_data2[4],2)}°')
 
 

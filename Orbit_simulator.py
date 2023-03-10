@@ -127,4 +127,4 @@ def simulate(distance, startingEle, landingEle, fullFlight, wetMass):
         arc_angle = math.atan2(spacecraftPos[0], spacecraftPos[1])
         dist = ((arc_angle*radius)/1000)
         return(dist, dv, (r - radius)/1000, i*step, firstAngle, lastAngle)
-
+    
