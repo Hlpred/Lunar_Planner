@@ -14,4 +14,4 @@ def deltaThetaTime(wetMass, yawChange, safetyFactor):
 
 bearing = midBearing(90, 0)
 print(bearing[0])
-print(deltaThetaTime(24277, bearing[1]/2, 1))
+print(deltaThetaTime(24385.66, bearing[1], 1))

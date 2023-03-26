@@ -111,28 +111,6 @@ def ele_adjustment(distance, launch_ele, land_ele):
   v2 = math.sqrt(2*(((-G*M))/(double_a*radius)+(G*M)/(radius+land_ele)))
   return angle1, angle2, v1, v2, x1, y1, double_a
 
-def grav_adjustment(target_aoa, v, engine_accel):
-  target_aoa = target_aoa*(math.pi/180)
-  grav_accel = -((G*M)/radius**2)
-  a = grav_accel/engine_accel
-  b = tan(target_aoa)
-  res_angle = 2*atan2((sqrt(-a**2+b**2+1)-1),(a+b))
-  return(res_angle*(180/math.pi), (v*math.cos(target_aoa))/math.cos(res_angle))
-
-def net_accel(real_aoa, engine_accel):
-  grav_accel = -((G*M)/radius**2)
-  real_aoa = real_aoa*(math.pi/180)
-  return sqrt((engine_accel*cos(real_aoa))**2+((engine_accel*sin(real_aoa))+grav_accel)**2)
-
-def dv_adjustment(net_accel, target_aoa, double_a, elevation):
-  target_aoa = target_aoa*(math.pi/180)
-  total_E = -(G*M)/(double_a*radius)
-  def f(x):
-    return sqrt(2*(total_E+((G*M)/(0.5*net_accel*x**2*sin(target_aoa)+radius+elevation))))-net_accel*x
-  x0 = 0
-  x = fsolve(f, x0)
-  return net_accel*x[0]
-
 def get_intersections(x0, y0, r0, x1, y1, r1):
     # circle 1: (x0, y0), radius r0
     # circle 2: (x1, y1), radius r1

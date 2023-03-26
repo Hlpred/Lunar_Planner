@@ -12,5 +12,4 @@ pitch_torque = 4e4
 pitch_inertia = 15.5
 yaw_torque = 3e4
 yaw_inertia = 22.1
-rcs_delay = 0.5
 hover_thrust = 182.527e3

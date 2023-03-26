@@ -4,7 +4,7 @@ import numpy as np
 import Constants
 import Lunar_planner
 
-step = 0.0005
+step = 0.0001
 radius = Constants.radius
 G = Constants.G
 M = Constants.M
@@ -42,8 +42,6 @@ def simulate(distance, startingEle, landingEle, fullFlight, wetMass):
     #spacecraftVel = [component*step for component in spacecraftVel]
     spacecraftVel = [0, 0]
 
-    xRes = []
-    yRes = []
     crash = False
     crashCheck = False
     burnDone = False
@@ -100,10 +98,6 @@ def simulate(distance, startingEle, landingEle, fullFlight, wetMass):
                 lastAngle = burnAngle*(180/math.pi)
                 if not fullFlight:
                     break
-
-        if i % 8000 == 0:
-            xRes.append(spacecraftPos[0])
-            yRes.append(spacecraftPos[1])
         
         prev_vel = math.sqrt(spacecraftVel[0]**2 + spacecraftVel[1]**2)
 
@@ -127,4 +121,5 @@ def simulate(distance, startingEle, landingEle, fullFlight, wetMass):
         arc_angle = math.atan2(spacecraftPos[0], spacecraftPos[1])
         dist = ((arc_angle*radius)/1000)
         return(dist, dv, (r - radius)/1000, i*step, firstAngle, lastAngle)
-    
+
+#print(simulate(2000, 0, 0, True, 24448.94))
