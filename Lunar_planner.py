@@ -24,8 +24,8 @@ quadList = []
 for simple_data in tree.xpath("/kml:kml/kml:Document/kml:Folder/kml:Placemark/kml:ExtendedData/kml:SchemaData/kml:SimpleData[@name='quad_code']", namespaces=ns):
   quadList.append(simple_data.text)
 
-r = Constants.r
-radius = Constants.radius
+r = Constants.radius_km
+radius = Constants.radius_m
 G = Constants.G
 M = Constants.M
 

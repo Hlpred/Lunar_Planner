@@ -1,7 +1,7 @@
 import math
 import Constants
 
-radius = Constants.radius
+radius = Constants.radius_m
 G = Constants.G
 M = Constants.M
 

@@ -1,6 +1,6 @@
 #Lunar Constants
-r = 1737.4
-radius = 1.7374e6
+radius_km = 1737.4
+radius_m = 1.7374e6
 M = 7.34767e22
 
 #Universal Constants
@@ -13,5 +13,6 @@ pitch_inertia = 15.5
 yaw_torque = 3e4
 yaw_inertia = 22.1
 main_thrust = 3.2e5
-burn_rate = 8
+main_burn_rate = 8
 hover_thrust = 182.527e3
+hover_burn_rate = 4.563
