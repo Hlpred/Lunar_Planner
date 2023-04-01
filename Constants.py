@@ -12,4 +12,6 @@ pitch_torque = 4e4
 pitch_inertia = 15.5
 yaw_torque = 3e4
 yaw_inertia = 22.1
+main_thrust = 3.2e5
+burn_rate = 8
 hover_thrust = 182.527e3

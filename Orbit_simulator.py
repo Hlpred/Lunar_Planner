@@ -1,16 +1,16 @@
 import math
 import matplotlib.pyplot as plt
 import numpy as np
-import Constants
+from Constants import *
 import Lunar_planner
 
 step = 0.0001
-radius = Constants.radius
-G = Constants.G
-M = Constants.M
 
-def engineAccel(wetMass, burnRate, thrust, time):
-    return thrust / (wetMass - burnRate*time)
+def engineAccel(initMass, burnRate, thrust, time, timeForward):
+    if timeForward:
+        return thrust / (initMass - burnRate*time)
+    else:
+        return thrust / (initMass + burnRate*time)
 
 def ellipse_slope(point, x1, y1):
   return -(point[0]*(math.sqrt((point[1]-y1)**2+(point[0]-x1)**2))+((point[0]-x1)*math.sqrt(point[0]**2+point[1]**2)))/(point[1]*(math.sqrt((point[1]-y1)**2+(point[0]-x1)**2))+((point[1]-y1)*math.sqrt(point[0]**2+point[1]**2)))
@@ -33,11 +33,11 @@ def grav_adjustment(r, foc_x, foc_y, pos, a, vel, a_s, path_angle):
     angle_above_path = math.atan((y+a_g*math.cos(alpha))/(((-b_1+math.sqrt(b_1**2-4*(c_1)))/2)+a_g*math.sin(-alpha)))
     return (angle_above_path+path_angle)
 
-def simulate(distance, startingEle, landingEle, fullFlight, wetMass):
-    manuver_data = Lunar_planner.ele_adjustment(distance, startingEle, landingEle)
+def simulate(distance, elevation, fullFlight, initMass, timeForward):
+    manuver_data = Lunar_planner.ele_adjustment(distance, elevation[0], elevation[1])
     #launchAngle = launchAngle*(math.pi/180)
     #burnAngle = burnAngle*(math.pi/180)
-    spacecraftPos = [0, radius + startingEle]
+    spacecraftPos = [0, radius + elevation[0]]
     #spacecraftVel = [math.cos(launchAngle)*totalVel, math.sin(launchAngle)*totalVel]
     #spacecraftVel = [component*step for component in spacecraftVel]
     spacecraftVel = [0, 0]
@@ -68,7 +68,7 @@ def simulate(distance, startingEle, landingEle, fullFlight, wetMass):
         burnAngle = slope_to_angle(slope, [spacecraftPos[0]/radius, spacecraftPos[1]/radius])
         orig_angle = burnAngle
         if burnDone == False:
-            burnAngle = grav_adjustment(r, foc_x, foc_y, spacecraftPos, manuver_data[6], spacecraftVel, engineAccel(wetMass, 8, 3.2e5, i*step), orig_angle)
+            burnAngle = grav_adjustment(r, foc_x, foc_y, spacecraftPos, manuver_data[6], spacecraftVel, engineAccel(initMass, burn_rate, main_thrust, i*step, timeForward), orig_angle)
         if spacecraftPos[0] != 0:
             theta = math.atan2(spacecraftPos[1], spacecraftPos[0])
         else:
@@ -88,9 +88,9 @@ def simulate(distance, startingEle, landingEle, fullFlight, wetMass):
             if i == 0:
                 firstAngle = burnAngle*(180/math.pi)
             #step is squared because you first convert into steps by multiplying by step. Then multiply by time (also step)
-            spacecraftVel[0] += math.cos(burnTheta)*engineAccel(wetMass, 8, 3.2e5, i*step)*step**2
-            spacecraftVel[1] += math.sin(burnTheta)*engineAccel(wetMass, 8, 3.2e5, i*step)*step**2
-            dv += engineAccel(wetMass, 8, 3.2e5, i*step)*step
+            spacecraftVel[0] += math.cos(burnTheta)*engineAccel(initMass, burn_rate, main_thrust, i*step, timeForward)*step**2
+            spacecraftVel[1] += math.sin(burnTheta)*engineAccel(initMass, burn_rate, main_thrust, i*step, timeForward)*step**2
+            dv += engineAccel(initMass, burn_rate, main_thrust, i*step, timeForward)*step
             if ((math.sqrt(spacecraftVel[0]**2 + spacecraftVel[1]**2)/step) > math.sqrt(2*(((-G*M))/(manuver_data[6]*radius)+(G*M)/(r)))):
                 burnDone = True
                 arc_angle = math.atan2(spacecraftPos[0], spacecraftPos[1])
@@ -101,9 +101,9 @@ def simulate(distance, startingEle, landingEle, fullFlight, wetMass):
         
         prev_vel = math.sqrt(spacecraftVel[0]**2 + spacecraftVel[1]**2)
 
-        if (r > radius+landingEle) and crashCheck == False:
+        if (r > radius+elevation[1]) and crashCheck == False:
             crashCheck = True
-        if r < (radius+landingEle) and crash == False and crashCheck == True:
+        if r < (radius+elevation[1]) and crash == False and crashCheck == True:
             crash = True
             initAngle = math.atan2(spacecraftPos[0], spacecraftPos[1])
             radAngle = 0
@@ -120,6 +120,23 @@ def simulate(distance, startingEle, landingEle, fullFlight, wetMass):
     else:
         arc_angle = math.atan2(spacecraftPos[0], spacecraftPos[1])
         dist = ((arc_angle*radius)/1000)
-        return(dist, dv, (r - radius)/1000, i*step, firstAngle, lastAngle)
+        if timeForward:
+            fuel_left = initMass - (burn_rate*(i*step))
+        else:
+            fuel_left = initMass + (burn_rate*(i*step))
+        return(dist, dv, (r - radius)/1000, i*step, firstAngle, lastAngle, fuel_left)
 
-#print(simulate(2000, 0, 0, True, 24448.94))
+def final_mass(inital_mass, delta_v, v_e):
+    return inital_mass/((math.e)**(delta_v/v_e))
+
+#launching rockets is the same as landing them in reverse
+def land_estimate(dist, elevation, post_launch_mass, launch_dv):
+    end_mass = final_mass(post_launch_mass, launch_dv, main_thrust/burn_rate)
+    for i in range(3):
+        land = simulate(dist, elevation[::-1], False, end_mass, False)
+        diff = post_launch_mass - land[6]
+        print(diff)
+        end_mass += diff
+    print(simulate(dist, elevation[::-1], False, end_mass, False))
+
+#land_estimate(2000, [-2565, -3375], 23622.436, 1459.0484968278959)
