@@ -6,7 +6,7 @@ M = 7.34767e22
 #Universal Constants
 G = 6.6743e-11
 
-#Ship Parameters
+#Ship Parameters (Default Delta Glider)
 Dry_mass = 1.1e4
 pitch_torque = 4e4
 pitch_inertia = 15.5

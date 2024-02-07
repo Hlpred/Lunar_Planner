@@ -41,4 +41,4 @@ def launch_time(wetMass, pitchChange, safetyFactor):
     pitchTime = 2*math.sqrt(pitchChange/accel)
     return pitchTime*safetyFactor
 
-launch_time(23410, 10, 1)
+#launch_time(23410, 50, 1)

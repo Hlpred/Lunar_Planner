@@ -1,9 +1,11 @@
 import math
 from Constants import *
-from Lunar_planner import ele_adjustment
+from Lunar_planner import ele_adjustment, ellipse_slope
 
-step = 0.0001
+#simulation time step length in seconds
+step = 0.001
 
+#calculates the acceleration of the engine if the simulation is running forwards or backwards
 def engineAccel(initMass, burnRate, thrust, time, timeForward):
     if timeForward:
         return thrust / (initMass - burnRate*time)
@@ -16,14 +18,23 @@ def ellipse_slope(point, x1, y1):
 def slope_to_angle(slope, point):
   return math.fabs(math.atan(slope)-math.atan(-point[0]/point[1]))
 
+#calculates the optimal angle to aim the main engines so that the net acceleration is at path_angle
 def grav_adjustment(r, foc_x, foc_y, pos, a, vel, a_s, path_angle):
     a_g = ((G*M)/r**2)
+    #semi major axis
     a /= 2
+    #calculate semi minor axis using relationship between a, b, and c in an ellipse
     b = math.sqrt(a**2-(math.sqrt(foc_x**2+foc_y**2)/2)**2)
+    #calculate angle of spacecraft relative to the semi major axis
     x_axis_angle = math.pi-(math.atan(foc_y/foc_x)-math.atan((pos[1]/radius_m-(foc_y)/2)/(pos[0]/radius_m-(foc_x)/2)))
+    #calculates the ellipse paramaterization variable t
     t = math.atan(a*math.tan(x_axis_angle)/b)
+    #calculates the curvature of the ellipse at the current point
     K = (a*b)/(math.sqrt((a*math.sin(t))**2+(b*math.cos(t))**2))**3
     v_mag = math.sqrt(vel[0]**2+vel[1]**2)/step
+    
+    #calculates the additional angle needed to keep the spacecraft on the planned orbit
+    #math demonstrated here: https://www.desmos.com/calculator/cgshtnrlvf
     alpha = -path_angle
     y = -(K*v_mag**2)/radius_m
     b_1 = 2*a_g*math.sin(-alpha)
@@ -32,12 +43,11 @@ def grav_adjustment(r, foc_x, foc_y, pos, a, vel, a_s, path_angle):
     return (angle_above_path+path_angle)
 
 def simulate(distance, elevation, fullFlight, initMass, timeForward):
+    #finds the lowest energy ellipse that connects the two points
     manuver_data = ele_adjustment(distance, elevation[0], elevation[1])
-    #launchAngle = launchAngle*(math.pi/180)
-    #burnAngle = burnAngle*(math.pi/180)
+    
+    #initalize the spacecraft starting position (m) and velocity (m/s) relative to the moon's center of mass
     spacecraftPos = [0, radius_m + elevation[0]]
-    #spacecraftVel = [math.cos(launchAngle)*totalVel, math.sin(launchAngle)*totalVel]
-    #spacecraftVel = [component*step for component in spacecraftVel]
     spacecraftVel = [0, 0]
 
     crash = False
@@ -58,30 +68,32 @@ def simulate(distance, elevation, fullFlight, initMass, timeForward):
     foc_y = focus_len*math.sin(new_theta)
     prev_vel = 0
     dv = 0
+    #This is the main simulation loop. It calculates all the physics of the rocket during flight.
     for i in range(round((1/step)*100000)):
         spacecraftPos[0] += spacecraftVel[0]
         spacecraftPos[1] += spacecraftVel[1]
-        r_s = math.sqrt(spacecraftPos[0]**2 + spacecraftPos[1]**2)
+        spacecraft_radius = math.sqrt(spacecraftPos[0]**2 + spacecraftPos[1]**2)
         slope = ellipse_slope([spacecraftPos[0]/radius_m, spacecraftPos[1]/radius_m], foc_x, foc_y)
         burnAngle = slope_to_angle(slope, [spacecraftPos[0]/radius_m, spacecraftPos[1]/radius_m])
         orig_angle = burnAngle
         if burnDone == False:
-            burnAngle = grav_adjustment(r_s, foc_x, foc_y, spacecraftPos, manuver_data[6], spacecraftVel, engineAccel(initMass, main_burn_rate, main_thrust, i*step, timeForward), orig_angle)
+            burnAngle = grav_adjustment(spacecraft_radius, foc_x, foc_y, spacecraftPos, manuver_data[6], spacecraftVel, engineAccel(initMass, main_burn_rate, main_thrust, i*step, timeForward), orig_angle)
         if spacecraftPos[0] != 0:
             theta = math.atan2(spacecraftPos[1], spacecraftPos[0])
         else:
             theta = math.pi/2
         burnTheta = (theta - math.pi/2) + burnAngle
-        spacecraftVel[0] -= math.cos(theta)*(G*M/((r_s)**2))*step**2
-        spacecraftVel[1] -= math.sin(theta)*(G*M/((r_s)**2))*step**2
-        #burnDone = True
+        spacecraftVel[0] -= math.cos(theta)*(G*M/((spacecraft_radius)**2))*step**2
+        spacecraftVel[1] -= math.sin(theta)*(G*M/((spacecraft_radius)**2))*step**2
+        #checks if the spacecraft has reached apoapsis
         if burnDone and not goingGown:
             if prev_vel < math.sqrt(spacecraftVel[0]**2 + spacecraftVel[1]**2):
                 goingGown = True       
                 arc_angle = math.atan2(spacecraftPos[0], spacecraftPos[1])
                 dist = ((arc_angle*radius_m)/1000)
-                print(f'Apoapsis Info {(r_s - radius_m)/1000} km, {i*step} s, {math.sqrt(spacecraftVel[0]**2 + spacecraftVel[1]**2)/step} m/s, {math.sqrt(2*(((-G*M))/(manuver_data[6]*radius_m)+(G*M)/(r_s)))} required m/s, {burnAngle*(180/math.pi)} degrees, {orig_angle*(180/math.pi)} degrees, {dist} km downrange, {(2*(r_s)/radius_m)-focus_len} a, {spacecraftPos}, {[foc_x, foc_y]}')
+                print(f'Apoapsis Info {(spacecraft_radius - radius_m)/1000} km, {i*step} s, {math.sqrt(spacecraftVel[0]**2 + spacecraftVel[1]**2)/step} m/s, {math.sqrt(2*(((-G*M))/(manuver_data[6]*radius_m)+(G*M)/(spacecraft_radius)))} required m/s, {burnAngle*(180/math.pi)} degrees, {orig_angle*(180/math.pi)} degrees, {dist} km downrange, {(2*(spacecraft_radius)/radius_m)-focus_len} a, {spacecraftPos}, {[foc_x, foc_y]}')
 
+        #simulates the engine's acceleration if orbital velocity hasn't been reached yet
         if not burnDone:
             if i == 0:
                 firstAngle = burnAngle*(180/math.pi)
@@ -89,7 +101,7 @@ def simulate(distance, elevation, fullFlight, initMass, timeForward):
             spacecraftVel[0] += math.cos(burnTheta)*engineAccel(initMass, main_burn_rate, main_thrust, i*step, timeForward)*step**2
             spacecraftVel[1] += math.sin(burnTheta)*engineAccel(initMass, main_burn_rate, main_thrust, i*step, timeForward)*step**2
             dv += engineAccel(initMass, main_burn_rate, main_thrust, i*step, timeForward)*step
-            if ((math.sqrt(spacecraftVel[0]**2 + spacecraftVel[1]**2)/step) > math.sqrt(2*(((-G*M))/(manuver_data[6]*radius_m)+(G*M)/(r_s)))):
+            if ((math.sqrt(spacecraftVel[0]**2 + spacecraftVel[1]**2)/step) > math.sqrt(2*(((-G*M))/(manuver_data[6]*radius_m)+(G*M)/(spacecraft_radius)))):
                 burnDone = True
                 arc_angle = math.atan2(spacecraftPos[0], spacecraftPos[1])
                 dist = (arc_angle*radius_km)
@@ -99,9 +111,10 @@ def simulate(distance, elevation, fullFlight, initMass, timeForward):
         
         prev_vel = math.sqrt(spacecraftVel[0]**2 + spacecraftVel[1]**2)
 
-        if (r_s > radius_m+elevation[1]) and crashCheck == False:
+        #detects if the spacecraft has hit the ground (used for full flight simulations)
+        if (spacecraft_radius > radius_m+elevation[1]) and crashCheck == False:
             crashCheck = True
-        if r_s < (radius_m+elevation[1]) and crash == False and crashCheck == True:
+        if spacecraft_radius < (radius_m+elevation[1]) and crash == False and crashCheck == True:
             crash = True
             initAngle = math.atan2(spacecraftPos[0], spacecraftPos[1])
             radAngle = 0
@@ -122,8 +135,9 @@ def simulate(distance, elevation, fullFlight, initMass, timeForward):
             fuel_left = initMass - (main_burn_rate*(i*step))
         else:
             fuel_left = initMass + (main_burn_rate*(i*step))
-        return(dist, dv, (r_s - radius_m)/1000, i*step, firstAngle, lastAngle, fuel_left)
+        return(dist, dv, (spacecraft_radius - radius_m)/1000, i*step, firstAngle, lastAngle, fuel_left, i*step)
 
+#use rocket equation to solve for final mass
 def final_mass(inital_mass, delta_v, v_e):
     return inital_mass/((math.e)**(delta_v/v_e))
 
@@ -133,21 +147,27 @@ def land_estimate(dist, elevation, post_launch_mass, launch_dv):
     for i in range(3):
         land = simulate(dist, elevation[::-1], False, end_mass, False)
         diff = post_launch_mass - land[6]
-        print(diff)
+        #print(diff)
         end_mass += diff
-    print(simulate(dist, elevation[::-1], False, end_mass, False))
+    return simulate(dist, elevation[::-1], False, end_mass, False)
 
+#unused test code
 def launch_estimate(dist, elevation, post_hover_mass, pitch_time):
     ground_aoa = ele_adjustment(dist, elevation[0], elevation[1])[0]
     y = radius_m + elevation[0]
     y_vel = 0
-    for i in range(round((1/step)*10)):
-        a_s = engineAccel(post_hover_mass, hover_burn_rate, hover_thrust, i*step, True)
-        a_g = -(G*M)/(y)
+    cut_off = False
+    for i in range(round((1/step)*100)):
+        if not cut_off:
+            a_s = engineAccel(post_hover_mass, hover_burn_rate, hover_thrust, i*step, True)*step**2
+        else:
+            a_s = 0
+        a_g = -((G*M)/(y**2))*step**2
         y_vel += a_s + a_g
         y += y_vel
-
-#land_estimate(2000, [-2565, -3375], 23622.436, 1459.0484968278959)
-#launch_estimate(2000, [-2565, -3375], 23622.436, 1459.0484968278959)
-
-print(simulate(2000, [0, 0], True, 2.45e4, True))
+        if (pitch_time*step < (y_vel/((G*M)/(y**2)))) and not cut_off:
+            cut_off = True
+            print(y-(radius_m + elevation[0]))
+        if y_vel < 0:
+            break
+    print(y-(radius_m + elevation[0]))

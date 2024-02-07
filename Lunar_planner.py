@@ -50,6 +50,7 @@ def calculate_distance(lat1, lon1, lat2, lon2):
 	# calculate the result
 	return(c * r)
 
+#Bearing calculator found here: https://gist.github.com/jeromer/2005586
 def calculate_initial_compass_bearing(pointA, pointB):
     """
     Calculates the bearing between two points.
@@ -86,9 +87,12 @@ def calculate_initial_compass_bearing(pointA, pointB):
 
     return compass_bearing
 
+#finds the slope of an ellipse with foci coordinates (x1, y1) at a given point. Note the other foci is at (0,0)
+#demonstration of math here: https://www.desmos.com/calculator/z8ijjamlt9
 def ellipse_slope(point, x1, y1):
   return -(point[0]*(math.sqrt((point[1]-y1)**2+(point[0]-x1)**2))+((point[0]-x1)*math.sqrt(point[0]**2+point[1]**2)))/(point[1]*(math.sqrt((point[1]-y1)**2+(point[0]-x1)**2))+((point[1]-y1)*math.sqrt(point[0]**2+point[1]**2)))
 
+#converts the slope of the ellipse into an angle (in degrees) relative to the horizon using the current spacecraft position (point)
 def slope_to_angle(slope, point):
   return math.fabs(atan(slope)*(180/math.pi)-atan(-point[0]/point[1])*(180/math.pi))
 
@@ -111,6 +115,7 @@ def ele_adjustment(distance, launch_ele, land_ele):
   v2 = math.sqrt(2*(((-G*M))/(double_a*radius)+(G*M)/(radius+land_ele)))
   return angle1, angle2, v1, v2, x1, y1, double_a
 
+#Based on: https://stackoverflow.com/questions/55816902/finding-the-intersection-of-two-circles
 def get_intersections(x0, y0, r0, x1, y1, r1):
     # circle 1: (x0, y0), radius r0
     # circle 2: (x1, y1), radius r1
